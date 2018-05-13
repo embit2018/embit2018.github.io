@@ -1,0 +1,474 @@
+﻿
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>失物招领</title>
+		<link rel="stylesheet" href="lib/bootstrap-4.0.0-dist/css/bootstrap.min.css">
+		<style>
+		.box {
+			padding-left: 100px;
+			padding-right: 100px;
+		}
+		.boot-select {
+			float: right;
+			width: 80px;
+		}
+
+		.boot-nav {
+			float: right;
+			width:50%;
+		}
+
+		.boot-page {
+			display: inline-block;
+			margin: 2px 10px 0 20px;
+			vertical-align: middle;
+		}
+
+		.page-total {
+			display: inline-block;
+			vertical-align: middle;
+		}
+
+		.logo-main {
+			padding-left: 100px;
+			padding-right: 100px;
+			background: url(img/embit.png) left center no-repeat content-box;
+			height: 70px;
+		}
+		.new-advertise {
+			padding-top: 50px;
+			padding-left: 100px;
+			padding-right: 300px;
+		}
+
+		</style>
+	</head>
+
+<script src=lib/jquery-3.3.1.min.js></script>
+<script src=lib/nebPay.js></script>
+<script src=lib/bootstrap-4.0.0-dist/js/bootstrap.min.js></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+<script src=lib/nebulas.js></script>	
+<body>
+		<div class=logo-main></div>
+
+		<div class="box" id="app">
+			<table class="table table-hover table-bordered">
+				<thead>
+					<tr>
+						<th width="10%">联系人</th>
+						<th width="15%">发布时间</th>
+						<th width="10%">联系电话</th>
+						<th width="30%">招领信息</th>
+						<th width="20%">发布人</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr v-for="data in tableList">
+						<td v-text="data.name"></td>
+						<td v-text="data.date"></td>
+						<td v-text="data.phone"></td>
+						<td v-text="data.advertise"></td>
+						<td v-text="data.author"></td>
+					</tr>
+				</tbody>
+				<tfoot>
+					<tr>
+						<td colspan="5">
+							<div class="pull-left">
+								<button class="btn btn-default">«</button>
+								<button class="btn ">»</button>
+								<div class="page-total">
+									共 <span v-text="pageTotal"></span> 页
+								</div>
+							</div>	
+						</td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+		<div class="container send">
+			<div style="font-size: 2rem; text-align: left; padding-right: 1rem; margin-bottom: 1rem;">新发布</div>
+			<div class="form-group row">
+				<div class="col">
+					<label>联系人</label>
+					<input type="text" class="form-control invalid"  data-i18n="placeholder/addr" id="name" data-validate-order-matters="required lengthEq35">
+				</div>
+				<div class="col">
+					<label>联系电话</label>
+					<input type="tel" class="form-control" id="phone">
+				</div>
+            </div>
+			<div class="form-group row">
+				<div class="col">
+					<label>招领信息</label>
+					<input type="text" class="form-control" id="advertise">
+				</div>
+				<div class="col">
+					<label>奖励</label>
+					<input type="text" class="form-control" id="bonus">
+				</div>
+            </div>
+			<button id="btn_newadv" class="btn btn-block" >发布新的招领启事</button>
+		</div>
+
+		<script>
+		"use strict";
+
+		var app = new Vue({
+			el: '#app',
+			props: {
+
+				// 页码
+				pages: {
+					type: Array,
+					default: function () {
+						return [1]
+					}
+				},
+
+				// 是否请求服务器端数据
+				async: {
+					type: Boolean,
+					default: false
+				},
+
+				// 每页显示个数
+				len: {
+					type: Number,
+					default: 10
+				},
+
+				// 显示个数数组
+				lens: {
+					type: Array,
+					default: function () {
+						return [10, 50, 100]
+					}
+				},
+
+				// 表格数据（数组）
+				data: {
+					type: Array,
+					default: function () {
+						return []
+					}
+				},
+
+				// AJAX地址
+				url: {
+					type: String,
+					default: ''
+				},
+
+				// 显示页数
+				pageLen: {
+					type: Number,
+					default: 5
+				},
+
+				// 总页数 
+				pageTotal: {
+					type: Number,
+					default: 10
+				},
+
+				// 参数内容
+				param: {
+					type: Object,
+					default: function () {
+						return {}
+					}
+				}
+			},
+			data () {
+				return {
+					lenArr: [5, 50, 100], // 每页显示长度设置
+					pageLen: 5, // 可显示的分页数
+					// url: '/bootpage/', // 请求路径
+					param: {}, // 传递参数
+					lists: [
+						{"num": 1, "author": 'luozh', "contents": 'BootPage是一款支持静态数据和服务器数据的表格分页组件', "remark": 'dsds'},
+						{num: 2, author: 'luozh', contents: '支持调整每页显示行数和页码显示个数，样式基于bootstrap', remark: 'dsds'},
+						{num: 3, author: 'luozh', contents: '<boot-page>标签中async指是否从服务器端获取数据，false为否', remark: 'dsds'},
+						{num: 4, author: 'luozh', contents: 'data为静态的表格数据数组；', remark: 'dsds'},
+						{num: 5, author: 'luozh', contents: 'lens为每页显示行数的数组', remark: 'dsds'},
+						{num: 6, author: 'luozh', contents: 'page-len为可显示的页码数', remark: 'dsds'},
+						{num: 7, author: 'luozh', contents: '服务器回传参数为{data:[], page_num: 6}, 其中data为表格数据，page_num为总页数', remark: 'dsds'},
+						{num: 8, author: 'luozh', contents: '可以调用this.$refs.page.refresh()刷新表格数据', remark: 'dsds'}
+					], // 表格原始数据
+					activeNum: 0,
+					tableList: [] // 分页组件传回的分页后数据
+				}
+			},
+			methods: {
+				refresh () {
+					this.$refs.page.refresh()
+				},
+				// 点击页码刷新数据
+				onPageClick (index) {
+					this.activeNum = index
+				},
+
+				// 上一页
+				onPrevClick () {
+
+					// 当前页是否为当前最小页码
+					if (this.activeNum > 0) {
+						this.activeNum = this.activeNum - 1
+					} else {
+						if (this.pages[0] !== 1) {
+							let newPages = []
+
+							for (let i = 0; i < this.pages.length; i++) {
+								newPages[i] = this.pages[i] - 1
+							}
+
+							this.pages = newPages
+							this.getData()
+						}
+					}
+				},
+
+				// 下一页
+				onNextClick () {
+
+					// 当前页是否为当前最大页码
+					if (this.activeNum < this.pages.length - 1) {
+						this.activeNum = this.activeNum + 1
+					} else {
+						if (this.pages[this.pages.length - 1] < this.pageTotal) {
+							let newPages = []
+
+							for (let i = 0; i < this.pages.length; i++) {
+								newPages[i] = this.pages[i] + 1
+							}
+
+							this.pages = newPages
+
+							this.getData()
+						}
+					}
+				},
+
+				// 第一页
+				onFirstClick () {
+					if (this.pages[0] === 1) {
+						this.activeNum = 0
+					} else {
+						let originPage = []
+
+						for (let i = 1; i <= this.pageLen; i++) {
+							originPage.push(i)
+						}
+
+						this.pages = originPage
+						this.activeNum === 0 ? this.getData() : this.activeNum = 0
+					}
+				},
+
+				// 最后一页
+				onLastClick () {
+					if (this.pageTotal <= this.pageLen) {
+						this.activeNum = this.pages.length - 1
+					} else {
+						let lastPage = []
+
+						for (let i = this.pageLen - 1; i >= 0; i--) {
+							lastPage.push(this.pageTotal - i)
+						}
+
+						this.pages = lastPage
+						this.activeNum === this.pages.length - 1 ? this.getData() : this.activeNum = this.pages.length - 1
+					}
+				},
+
+				// 获取页码
+				getPages () {
+					this.pages = []
+
+					this.pageTotal = 10;
+
+					// 比较总页码和显示页数
+					if (this.pageTotal <= this.pageLen) {
+						for (let i = 1; i <= this.pageTotal; i++) {
+							this.pages.push(i)
+						}
+					} else {
+						for (let i = 1; i <= this.pageLen; i++) {
+							this.pages.push(i)
+						}
+					}
+				},
+
+				// 页码变化获取数据
+				getData () {
+					if (!this.async) {
+						let len = this.len,
+							pageNum = this.pages[this.activeNum] - 1,
+							newData = [];
+
+						for (let i = pageNum * len; i < (pageNum * len + len); i++) {
+							this.data[i] !== undefined ? newData.push(this.data[i]) : ''
+						}
+						
+						this.$dispatch('data', newData)
+					} else {
+						this.param.active = this.pages[this.activeNum]
+						this.param.len = this.len
+
+						this.$http({
+							url: this.url, 
+							method: 'POST',
+							data: this.param
+						})
+						.then(function (response) {
+							this.pageTotal = response.data.page_num
+
+							if (this.pages.length !== this.pageLen || this.pageTotal < this.pageLen) {
+								this.getPages()
+							}
+
+							if (!response.data.data.length) {
+								this.activeNum = this.pageTotal - 1
+							}
+
+							this.$dispatch('data', response.data.data)
+						})
+					}
+				},
+
+				// 刷新表格
+				refresh () {
+					this.getData()
+				},
+
+				// 重置并刷新表格
+				refresh2 () {
+					this.pages = [1]
+								
+					this.activeNum === 0 ? this.getData() : this.activeNum = 0
+				}
+			},
+			events: {
+
+				// 分页组件传回的表格数据
+				'data' (data) {
+					this.tableList = data
+				},
+
+				// 刷新数据
+				'refresh' () {
+					this.refresh()
+				}
+			}
+		});
+
+		var dappAddress = "n1soSu275hFmesd8jT5E5ZeTrCGNUibNeGD";
+
+		var nebulas = require("nebulas"),
+		Account = nebulas.Account,
+		neb = new nebulas.Neb();
+		neb.setRequest(new nebulas.HttpRequest("https://testnet.nebulas.io"));
+
+        $("#btn_newadv").on("click", onClickNewAdvertise);
+
+		// 搜索功能: 查找Super-Dictionary 中有没有该词条
+		function getPages(page) {
+			var from = Account.NewAccount().getAddressString();
+
+			var value = "0";
+			var nonce = "0"
+			var gas_price = "1000000"
+			var gas_limit = "2000000"
+			var callFunction = "forEach";
+			var callArgs = "[10, " + page * 10 + "]"; //in the form of ["args"]
+			var contract = {
+				"function": callFunction,
+				"args": callArgs
+			}
+
+			neb.api.call(from,dappAddress,value,nonce,gas_price,gas_limit,contract).then(function (resp) {
+				cbSearch(resp)
+			}).catch(function (err) {
+				//cbSearch(err)
+				console.log("error:" + err.message)
+			})
+
+		};
+
+		getPages(0);
+
+		//return of search,
+		function cbSearch(resp) {
+			var result = resp.result    ////resp is an object, resp.result is a JSON string
+			console.log("return of rpc call: " + JSON.stringify(result))
+
+			if (result === 'null'){
+			} else{
+				//if result is not null, then it should be "return value" or "error message
+				var tableList;
+				try{
+					tableList = eval(JSON.parse(result))
+				}catch (err){
+					//result is the error message
+				}
+				if (tableList !== 'null')
+				{
+					Vue.set(app, 'tableList', tableList);
+				}
+			}
+
+		}
+
+		Date.prototype.Format = function (fmt) { //author: meizz 
+			var o = {
+				"M+": this.getMonth() + 1, //月份 
+				"d+": this.getDate(), //日 
+				"h+": this.getHours(), //小时 
+				"m+": this.getMinutes(), //分 
+				"s+": this.getSeconds(), //秒 
+				"q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+				"S": this.getMilliseconds() //毫秒 
+			};
+			if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+			for (var k in o)
+			if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+			return fmt;
+		}
+
+		var NebPay = require("nebpay");     //https://github.com/nebulasio/nebPay
+		var nebPay = new NebPay();
+		var serialNumber;
+		function newAdvertise()
+		{
+			var to = dappAddress;
+			var value = "0";
+			var callFunction = "set";
+			var callArgs = "[";
+			callArgs += "\"" + $("#name").val() + "\",";
+			callArgs += "\"" + new Date().Format("yyyy-MM-dd hh:mm:ss") + "\",";
+			callArgs += "\"" + $("#phone").val() + "\",";
+			callArgs += "\"" + $("#advertise").val() + "\"";
+			callArgs += "]"; //in the form of ["args"]
+
+			serialNumber = nebPay.call(to, value, callFunction, callArgs, {    //使用nebpay的call接口去调用合约,
+				listener: cbNewAdvertise        //设置listener, 处理交易返回信息
+			});
+		}
+        function onClickNewAdvertise() {
+			newAdvertise();
+        }
+		function cbNewAdvertise(resp) {
+			console.log("response of push: " + JSON.stringify(resp));
+			alert(JSON.stringify(resp));
+		}
+
+		</script>
+
+	</body>
+
+</html>
